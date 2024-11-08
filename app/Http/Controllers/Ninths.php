@@ -55,6 +55,8 @@ class Ninths extends Controller
 
             $ninth = Ninth::create([
                 'title' => $validated['title'],
+                'by_signal' => $validated['by_signal'],
+                'contrition' => $validated['contrition'],
                 'prayer_every_day' => $validated['prayer_every_day'],
             ]);
 
@@ -62,8 +64,6 @@ class Ninths extends Controller
             $daysData = collect($validated['days'])->map(function ($dayData) use ($ninth) {
                 return [
                     'title' => $dayData['title'],
-                    'by_signal' => $dayData['by_signal'],
-                    'contrition' => $dayData['contrition'],
                     'ninth_id' => $ninth->id,
                     'created_at' => now(),
                     'updated_at' => now(),
@@ -140,6 +140,8 @@ class Ninths extends Controller
 
             $ninth->update([
                 'title' => $validated['title'],
+                'by_signal' => $validated['by_signal'],
+                'contrition' => $validated['contrition'],
                 'prayer_every_day' => $validated['prayer_every_day'],
             ]);
 
@@ -150,8 +152,6 @@ class Ninths extends Controller
             $daysData = collect($validated['days'])->map(function ($dayData) use ($ninth) {
                 return [
                     'title' => $dayData['title'],
-                    'by_signal' => $dayData['by_signal'],
-                    'contrition' => $dayData['contrition'],
                     'ninth_id' => $ninth->id,
                     'created_at' => now(),
                     'updated_at' => now(),
