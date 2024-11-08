@@ -12,8 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('ninths', function (Blueprint $table) {
-            $table->string('by_signal')->after('title'); // Agrega el campo after title
-            $table->string('contrition')->after('by_signal'); // Agrega el campo después de by_signal
+            $table->text('by_signal')->after('title'); // Agrega el campo after title
+            $table->text('contrition')->after('by_signal'); // Agrega el campo después de by_signal
         });
     }
 
