@@ -10,7 +10,7 @@ class Ninth extends Model
     use HasFactory;
 
     // Especificamos los campos que pueden ser llenados masivamente
-    protected $fillable = ['title', 'prayer_every_day'];
+    protected $fillable = ['title', 'by_signal', 'contrition', 'prayer_every_day'];
 
     // Relación uno a muchos (Un Ninth puede tener muchos Days)
     public function days()
