@@ -34,5 +34,3 @@ class CheckResourceExistence
 }
 
 
-by_signal
-contrition
