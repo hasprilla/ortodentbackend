@@ -12,25 +12,24 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class Ninths extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
+
     public function index()
     {
         $data = Ninth::with('days')->get();
 
         if ($data->isEmpty()) {
-            return response()->json(['message' => 'No novenas found'], 404);  // Retorna un 404 si no se encuentran novenas
+            return response()->json(['message' => 'No novenas found'], 404);
         }
 
         return response()->json(['data' => $data], 200);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
+
     public function store(Request $request)
     {
+
+
+
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'prayer_every_day' => 'required|string',
@@ -38,95 +37,183 @@ class Ninths extends Controller
             'days.*.title' => 'required|string|max:255',
         ]);
 
-        // Crear el registro en la tabla `ninths`
-        $ninth = Ninth::create([
-            'title' => $validated['title'],
-            'prayer_every_day' => $validated['prayer_every_day'],
-        ]);
 
-        // Crear los días asociados en la tabla `days`
-        foreach ($validated['days'] as $dayData) {
-            // Creamos cada día asociado al `ninth` recién creado
-            Day::create([
-                'title' => $dayData['title'],
-                'ninth_id' => $ninth->id, // Relacionamos el día con el `ninth`
-            ]);
+        $ninthExists = Ninth::where('title', $validated['title'])->exists();
+
+        if ($ninthExists) {
+            return response()->json([
+                'message' => 'Ya existe un Ninth con ese título.',
+            ], 409);
         }
 
-        // Enviar una respuesta JSON de éxito
-        return response()->json([
-            'message' => 'Ninth y días creados con éxito.',
-            'data' =>  Ninth::with('days')->get()->last(),
-            // 'days' => $ninth->days,
-        ], 201); // 201 para indicar que la creación fue exitosa
+
+        DB::beginTransaction();
+
+        try {
+
+            $ninth = Ninth::create([
+                'title' => $validated['title'],
+                'prayer_every_day' => $validated['prayer_every_day'],
+            ]);
+
+
+            $daysData = collect($validated['days'])->map(function ($dayData) use ($ninth) {
+                return [
+                    'title' => $dayData['title'],
+                    'ninth_id' => $ninth->id,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
+            })->toArray();
+
+
+            Day::insert($daysData);
+
+
+            DB::commit();
+
+
+            return response()->json([
+                'message' => 'Ninth y días creados con éxito.',
+                'data' => $ninth->load('days'),
+            ], 201);
+        } catch (\Exception $e) {
+
+            DB::rollBack();
+
+
+            return response()->json([
+                'message' => 'Ocurrió un error al crear el Ninth y sus días.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 
 
-    /**
-     * Display the specified resource.
-     */
+
     public function show(string $id)
     {
         try {
-            // Intentamos obtener la novena con sus días asociados
+
             $ninth = Ninth::with('days')->findOrFail($id);
 
-            // Si la novena existe, la devolvemos como respuesta JSON
+
             return response()->json(['data' => $ninth], 200);
         } catch (ModelNotFoundException $e) {
-            // Si no se encuentra la novena, devolvemos un error personalizado
+
             return response()->json(['error' => 'Ninth not found'], 404);
         }
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
+
     public function update(Request $request, string $id)
     {
 
-        // Validación de los datos
+
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'prayer_every_day' => 'required|string',
-            'days' => 'required|array', // Un array de días
-            'days.*.title' => 'required|string|max:255', // Títulos de cada día
+            'days' => 'required|array',
+            'days.*.title' => 'required|string|max:255',
         ]);
 
-        // Buscar el `Ninth` por el ID
-        $ninth = Ninth::findOrFail($id);
 
-        // Actualizar el `Ninth` con los nuevos datos
-        $ninth->update([
-            'title' => $validated['title'],
-            'prayer_every_day' => $validated['prayer_every_day'],
-        ]);
+        $ninth = Ninth::find($id);
 
-        // Eliminar los días existentes antes de agregar los nuevos
-        $ninth->days()->delete();
 
-        // Crear los nuevos días asociados al `Ninth` actualizado
-        foreach ($validated['days'] as $dayData) {
-            Day::create([
-                'title' => $dayData['title'],
-                'ninth_id' => $ninth->id, // Relacionamos el día con el `ninth`
-            ]);
+        if (!$ninth) {
+            return response()->json([
+                'message' => 'El Ninth con el ID proporcionado no existe.',
+            ], 404);
         }
 
-        // Responder con un mensaje de éxito y los datos actualizados
-        return response()->json([
-            'message' => 'Ninth y días actualizados con éxito.',
-            'data' =>Ninth::with('days')->findOrFail($id)
-        ], 200); // 200 OK
+
+        DB::beginTransaction();
+
+        try {
+
+            $ninth->update([
+                'title' => $validated['title'],
+                'prayer_every_day' => $validated['prayer_every_day'],
+            ]);
+
+
+            $ninth->days()->delete();
+
+
+            $daysData = collect($validated['days'])->map(function ($dayData) use ($ninth) {
+                return [
+                    'title' => $dayData['title'],
+                    'ninth_id' => $ninth->id,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
+            })->toArray();
+
+
+            Day::insert($daysData);
+
+
+            DB::commit();
+
+
+            $ninth->load('days');
+
+
+            return response()->json([
+                'message' => 'Ninth y días actualizados con éxito.',
+                'data' => $ninth,
+            ], 200);
+        } catch (\Exception $e) {
+
+            DB::rollBack();
+
+
+            return response()->json([
+                'message' => 'Ocurrió un error al actualizar el Ninth y sus días.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 
-
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
+    public function destroy($id)
     {
-        //
+
+        $ninth = Ninth::find($id);
+
+
+        if (!$ninth) {
+            return response()->json([
+                'message' => 'El Ninth con el ID proporcionado no existe.',
+            ], 404);
+        }
+
+
+        DB::beginTransaction();
+
+        try {
+
+            $ninth->days()->delete();
+
+
+            $ninth->delete();
+
+
+            DB::commit();
+
+
+            return response()->json([
+                'message' => 'Ninth y días eliminados con éxito.',
+            ], 200);
+        } catch (\Exception $e) {
+
+            DB::rollBack();
+
+
+            return response()->json([
+                'message' => 'Ocurrió un error al eliminar el Ninth y sus días.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 }
