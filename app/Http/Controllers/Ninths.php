@@ -32,6 +32,8 @@ class Ninths extends Controller
 
         $validated = $request->validate([
             'title' => 'required|string|max:255',
+            'by_signal' => 'required|string',
+            'contrition' => 'required|string',
             'prayer_every_day' => 'required|string',
             'days' => 'required|array',
             'days.*.title' => 'required|string|max:255',
@@ -60,6 +62,8 @@ class Ninths extends Controller
             $daysData = collect($validated['days'])->map(function ($dayData) use ($ninth) {
                 return [
                     'title' => $dayData['title'],
+                    'by_signal' => $dayData['by_signal'],
+                    'contrition' => $dayData['contrition'],
                     'ninth_id' => $ninth->id,
                     'created_at' => now(),
                     'updated_at' => now(),
@@ -112,6 +116,8 @@ class Ninths extends Controller
 
         $validated = $request->validate([
             'title' => 'required|string|max:255',
+            'by_signal' => 'required|string',
+            'contrition' => 'required|string',
             'prayer_every_day' => 'required|string',
             'days' => 'required|array',
             'days.*.title' => 'required|string|max:255',
@@ -144,6 +150,8 @@ class Ninths extends Controller
             $daysData = collect($validated['days'])->map(function ($dayData) use ($ninth) {
                 return [
                     'title' => $dayData['title'],
+                    'by_signal' => $dayData['by_signal'],
+                    'contrition' => $dayData['contrition'],
                     'ninth_id' => $ninth->id,
                     'created_at' => now(),
                     'updated_at' => now(),

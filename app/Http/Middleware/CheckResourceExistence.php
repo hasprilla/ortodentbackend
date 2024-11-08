@@ -32,3 +32,7 @@ class CheckResourceExistence
         return $next($request);
     }
 }
+
+
+by_signal
+contrition
