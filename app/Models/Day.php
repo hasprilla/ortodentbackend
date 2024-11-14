@@ -10,7 +10,7 @@ class Day extends Model
     use HasFactory;
 
     // Especificamos los campos que pueden ser llenados masivamente
-    protected $fillable = ['title', 'ninth_id'];
+    protected $fillable = ['title', 'f_sentence', 's_sentence', 'ninth_id'];
 
     // Relación inversa: Un Day pertenece a un Ninth
     public function ninth()

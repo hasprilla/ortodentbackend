@@ -28,8 +28,6 @@ class Ninths extends Controller
     public function store(Request $request)
     {
 
-
-
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'by_signal' => 'required|string',
@@ -37,6 +35,8 @@ class Ninths extends Controller
             'prayer_every_day' => 'required|string',
             'days' => 'required|array',
             'days.*.title' => 'required|string|max:255',
+            'days.*.f_sentence' => 'nullable|string',
+            'days.*.s_sentence' => 'nullable|string',
         ]);
 
 
@@ -64,6 +64,8 @@ class Ninths extends Controller
             $daysData = collect($validated['days'])->map(function ($dayData) use ($ninth) {
                 return [
                     'title' => $dayData['title'],
+                    'f_sentence' => $dayData['f_sentence'] ?? null,
+                    's_sentence' => $dayData['s_sentence'] ?? null,
                     'ninth_id' => $ninth->id,
                     'created_at' => now(),
                     'updated_at' => now(),
@@ -72,20 +74,13 @@ class Ninths extends Controller
 
 
             Day::insert($daysData);
-
-
             DB::commit();
-
-
             return response()->json([
                 'message' => 'Ninth y días creados con éxito.',
                 'data' => $ninth->load('days'),
             ], 201);
         } catch (\Exception $e) {
-
             DB::rollBack();
-
-
             return response()->json([
                 'message' => 'Ocurrió un error al crear el Ninth y sus días.',
                 'error' => $e->getMessage(),
@@ -98,13 +93,9 @@ class Ninths extends Controller
     public function show(string $id)
     {
         try {
-
             $ninth = Ninth::with('days')->findOrFail($id);
-
-
             return response()->json(['data' => $ninth], 200);
         } catch (ModelNotFoundException $e) {
-
             return response()->json(['error' => 'Ninth not found'], 404);
         }
     }
@@ -113,7 +104,7 @@ class Ninths extends Controller
     public function update(Request $request, string $id)
     {
 
-
+        // Validate input
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'by_signal' => 'required|string',
@@ -121,11 +112,12 @@ class Ninths extends Controller
             'prayer_every_day' => 'required|string',
             'days' => 'required|array',
             'days.*.title' => 'required|string|max:255',
+            'days.*.f_sentence' => 'nullable|string',
+            'days.*.s_sentence' => 'nullable|string',
         ]);
 
-
+        // Find the ninth record
         $ninth = Ninth::find($id);
-
 
         if (!$ninth) {
             return response()->json([
@@ -133,11 +125,11 @@ class Ninths extends Controller
             ], 404);
         }
 
-
+        // Start transaction
         DB::beginTransaction();
 
         try {
-
+            // Update the ninth record
             $ninth->update([
                 'title' => $validated['title'],
                 'by_signal' => $validated['by_signal'],
@@ -145,37 +137,37 @@ class Ninths extends Controller
                 'prayer_every_day' => $validated['prayer_every_day'],
             ]);
 
-
+            // Delete existing days related to the ninth
             $ninth->days()->delete();
 
-
+            // Prepare days data for insertion
             $daysData = collect($validated['days'])->map(function ($dayData) use ($ninth) {
                 return [
                     'title' => $dayData['title'],
+                    'f_sentence' => $dayData['f_sentence'] ?? null,
+                    's_sentence' => $dayData['s_sentence'] ?? null,
                     'ninth_id' => $ninth->id,
                     'created_at' => now(),
                     'updated_at' => now(),
                 ];
             })->toArray();
 
-
+            // Insert new days
             Day::insert($daysData);
 
-
+            // Commit transaction
             DB::commit();
 
-
+            // Reload the ninth model with its associated days
             $ninth->load('days');
-
 
             return response()->json([
                 'message' => 'Ninth y días actualizados con éxito.',
                 'data' => $ninth,
             ], 200);
         } catch (\Exception $e) {
-
+            // Rollback transaction in case of error
             DB::rollBack();
-
 
             return response()->json([
                 'message' => 'Ocurrió un error al actualizar el Ninth y sus días.',
