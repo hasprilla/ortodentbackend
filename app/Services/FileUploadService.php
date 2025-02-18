@@ -16,16 +16,26 @@ class FileUploadService
      */
     public function uploadFile(Request $request)
     {
-        // Validar que el archivo esté presente
+        // Validar que el archivo esté presente (puede ser uno o múltiples)
         $request->validate([
-            'file' => 'required|file',
+            'file' => 'required|array',  // Los archivos deben ser un array
+            'file.*' => 'file',  // Cada archivo debe ser un archivo válido
         ]);
 
-        // Subir el archivo al almacenamiento 'public'
-        $path = $request->file('file')->store('uploads', 'public');
+        // Crear un array para almacenar los nombres de los archivos subidos
+        $uploadedFiles = [];
 
-        // Devolver el nombre del archivo (solo el nombre, no la ruta completa)
-        return basename($path);
+        // Si hay múltiples archivos, iterar y almacenarlos
+        foreach ($request->file('file') as $file) {
+            // Subir el archivo al almacenamiento 'public'
+            $path = $file->store('uploads', 'public');
+
+            // Guardar solo el nombre del archivo (no la ruta completa)
+            $uploadedFiles[] = basename($path);
+        }
+
+        // Devolver los nombres de los archivos subidos
+        return $uploadedFiles;
     }
 
     /**
