@@ -45,7 +45,7 @@ services:
     artisan:
         image: laravel-app
         container_name: laravel_artisan
-        entrypoint: ['php', '/var/www/artisan']
+        entrypoint: ["php", "/var/www/artisan"]
         volumes:
             - .:/var/www
         depends_on:
