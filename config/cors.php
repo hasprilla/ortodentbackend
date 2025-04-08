@@ -19,7 +19,10 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['*'], 
+    'allowed_origins' => [
+        'http://localhost:59998',
+        'https://ortodent.haaspes.space',
+    ],
 
     'allowed_origins_patterns' => [],
 
