@@ -25,7 +25,4 @@ jobs:
           server-dir: ${{ secrets.CPANEL_DIR }}
           exclude: |
             .env
-            /.github/
-            /storage/
-            /vendor/
-            *.log
+        
