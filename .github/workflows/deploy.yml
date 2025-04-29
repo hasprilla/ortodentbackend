@@ -1,0 +1,27 @@
+name: Deploy Laravel API to cPanel
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install PHP dependencies
+        run: |
+          composer install --no-dev --optimize-autoloader --no-interaction
+
+      - name: Upload files via SFTP
+        uses: SamKirkland/FTP-Deploy-Action@v4
+        with:
+          server: ${{ secrets.CPANEL_HOST }}
+          username: ${{ secrets.CPANEL_USER }}
+          password: ${{ secrets.CPANEL_PASS }}
+          local-dir: ./
+          server-dir: ${{ secrets.CPANEL_DIR }}
+          exclude: |
+            .env
