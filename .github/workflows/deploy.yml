@@ -29,3 +29,5 @@ jobs:
             /storage/
             /vendor/
             *.log
+
+            
