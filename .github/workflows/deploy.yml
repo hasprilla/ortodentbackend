@@ -16,7 +16,7 @@ jobs:
           composer install --no-dev --optimize-autoloader --no-interaction
 
       - name: Upload files via SFTP
-        uses: SamKirkland/FTP-Deploy-Action@v4
+        uses: SamKirkland/FTP-Deploy-Action@4.1.0
         with:
           server: ${{ secrets.CPANEL_HOST }}
           username: ${{ secrets.CPANEL_USER }}
