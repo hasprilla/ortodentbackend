@@ -21,8 +21,8 @@ jobs:
           server: ${{ secrets.CPANEL_HOST }}
           username: ${{ secrets.CPANEL_USER }}
           password: ${{ secrets.CPANEL_PASS }}
-          local-dir: ./
-          server-dir: ${{ secrets.CPANEL_DIR }}
+          local-dir: './'
+          server-dir: '/home/haaspess/repositories/ortodentbackend/'
           exclude: |
             .env
             /.github/
@@ -30,4 +30,4 @@ jobs:
             /vendor/
             *.log
 
-            
+
