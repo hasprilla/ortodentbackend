@@ -7,8 +7,12 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\FileUploadController;
 
 // Rutas públicas
-Route::post('/login', [AuthenticatedSessionController::class, 'store']);
-Route::post('/register', [RegisteredUserController::class, 'store']);
+
+Route::group(['middleware' => 'throttle:100,1', 'api'], function () {
+    Route::post('/login', [AuthenticatedSessionController::class, 'store']);
+    Route::post('/register', [RegisteredUserController::class, 'store']);
+});
+
 
 // Rutas protegidas
 Route::middleware(['apiauth', 'throttle:100,1'])->group(function () {
