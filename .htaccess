@@ -1,4 +1,4 @@
-<FilesMatch "artisan">
+<!-- <FilesMatch "artisan">
 Order allow,deny
 Deny from all
-</FilesMatch>
+</FilesMatch> -->
