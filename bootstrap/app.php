@@ -22,12 +22,16 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        // Opción 1: Solo en prepend (se ejecuta antes)
         $middleware->api(prepend: [
             \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
             \Illuminate\Http\Middleware\HandleCors::class,
+            \App\Http\Middleware\BlockArtisanAccess::class,
         ]);
 
+        // Opción 2: Solo en el grupo api (se ejecuta en el orden definido)
         $middleware->group('api', [
+            \App\Http\Middleware\BlockArtisanAccess::class,
             \Illuminate\Routing\Middleware\ThrottleRequests::class . ':100,1',
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
             \App\Http\Middleware\SanitizeInput::class,
