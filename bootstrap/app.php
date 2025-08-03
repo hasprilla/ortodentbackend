@@ -27,6 +27,7 @@ return Application::configure(basePath: dirname(__DIR__))
             \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
             \Illuminate\Http\Middleware\HandleCors::class,
             \App\Http\Middleware\BlockArtisanAccess::class,
+            \App\Http\Middleware\SecureHeaders::class,
         ]);
 
         // Opción 2: Solo en el grupo api (se ejecuta en el orden definido)
@@ -35,6 +36,7 @@ return Application::configure(basePath: dirname(__DIR__))
             \Illuminate\Routing\Middleware\ThrottleRequests::class . ':100,1',
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
             \App\Http\Middleware\SanitizeInput::class,
+            \App\Http\Middleware\SecureHeaders::class,
         ]);
 
         $middleware->alias([

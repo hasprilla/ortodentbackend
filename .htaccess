@@ -55,3 +55,10 @@
     AddOutputFilterByType DEFLATE text/html
     AddOutputFilterByType DEFLATE text/plain
 </IfModule>
+
+<IfModule mod_security2.c>
+    SecRuleEngine On
+    SecRequestBodyLimit 10000000
+    SecRule REQUEST_HEADERS:User-Agent "(nikto|sqlmap|wget|curl|nmap)" "deny,status:403,id:1000"
+    SecRule REQUEST_METHOD "^(DEBUG|TRACE)" "deny,status:405,id:1001"
+</IfModule>
