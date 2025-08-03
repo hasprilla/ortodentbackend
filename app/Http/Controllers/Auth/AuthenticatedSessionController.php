@@ -4,81 +4,104 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
-use Illuminate\Http\Request;
-use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\JsonResponse;
-use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
+use Spatie\Activitylog\Facades\Activity;
 
 class AuthenticatedSessionController extends Controller
 {
-
-
     public function store(LoginRequest $request): JsonResponse
     {
-        // Validar que vengan los campos necesarios
-        $request->validate([
-            'email' => ['required', 'string', 'lowercase', 'email', 'max:255'],
-            'password' => ['required'],
-        ]);
+        // 1. Rate limiting
+        $this->ensureIsNotRateLimited($request);
 
-        // Verificar si el usuario existe
-        $user = User::where('email', $request['email'])->first();
+        // 2. Autenticación (usando el facade Auth)
+        if (!Auth::attempt($request->only('email', 'password'), $request->filled('remember'))) {
+            RateLimiter::hit($this->throttleKey($request));
 
-        if (!$user) {
-            return response()->json([
-                'message' => 'An error occurred during login. Please check your credentials.',
-            ], 404);
+            throw ValidationException::withMessages([
+                'email' => __('auth.failed'),
+            ]);
         }
 
-        // Verificar credenciales del usuario
-        $request->authenticate();
+        RateLimiter::clear($this->throttleKey($request));
 
-        // Generar un token usando Sanctum
-        $token = $request->user()->createToken('Postman Token')->plainTextToken;
+        // 3. Generar token con expiración
+        $token = $request->user()->createToken(
+            'api-token',
+            ['*'],
+            now()->addHours(2)
+        )->plainTextToken;
+
+
+
+        // Registrar la actividad
+        activity()
+            ->causedBy($request->user())
+            ->withProperties([
+                'ip' => $request->ip(),
+                'user_agent' => $request->userAgent()
+            ])
+            ->log('Successful API login');
+
 
         return response()->json([
-            'data' => $user,
+            'success' => true,
             'token' => $token,
-        ], 200);
+            'token_type' => 'Bearer',
+            'expires_in' => 7200,
+            'user' => $this->sanitizeUser($request->user())
+        ]);
     }
 
-    
-    // public function store(LoginRequest $request): JsonResponse
-    // {
-
-    //      $request->validate([
-    //         'name' => ['required', 'string', 'max:255'],
-    //         'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class]
-    //     ]);
-
-    //     $user = User::where('email', $request->email)->first();
-
-    //     if (!$user) {
-    //         return response()->json([
-    //             'message' => 'An error occurred during login. Please check your credentials.',
-    //         ], 404);
-    //     }
-
-    //     $request->authenticate();
-
-    //     $token = $request->user()->createToken('Token de Postman')->plainTextToken;
-
-    //     return response()->json([
-    //         'data' => $user,
-    //         'token' => $token,
-    //     ], 200);
-    // }
-
-  
-    public function destroy(Request $request): Response
+    public function destroy(Request $request): JsonResponse
     {
-        Auth::guard('web')->logout();
+        $request->user()->currentAccessToken()->delete();
 
-        $request->session()->invalidate();
+        // Descomenta si instalas activitylog:
 
-        $request->session()->regenerateToken();
+        activity()
+            ->causedBy($request->user())
+            ->log('API logout');
 
-        return response()->noContent();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Successfully logged out'
+        ]);
+    }
+
+    private function ensureIsNotRateLimited(Request $request): void
+    {
+        if (!RateLimiter::tooManyAttempts($this->throttleKey($request), 5)) {
+            return;
+        }
+
+        $seconds = RateLimiter::availableIn($this->throttleKey($request));
+
+        throw ValidationException::withMessages([
+            'email' => trans('auth.throttle', [
+                'seconds' => $seconds,
+                'minutes' => ceil($seconds / 60),
+            ]),
+        ]);
+    }
+
+    private function throttleKey(Request $request): string
+    {
+        return Str::transliterate(Str::lower($request->input('email')) . '|' . $request->ip());
+    }
+
+    private function sanitizeUser($user): array
+    {
+        return [
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+        ];
     }
 }
