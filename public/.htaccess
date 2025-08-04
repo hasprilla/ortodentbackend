@@ -5,17 +5,45 @@
 
     RewriteEngine On
 
-    # Handle Authorization Header
+    ### Redirección HTTPS ###
+    RewriteCond %{HTTPS} off
+    RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+    ### Manejo de Headers de Autorización ###
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 
-    # Redirect Trailing Slashes If Not A Folder...
+    ### Redirect de trailing slashes ###
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_URI} (.+)/$
     RewriteRule ^ %1 [L,R=301]
 
-    # Send Requests To Front Controller...
+    ### Front Controller ###
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [L]
 </IfModule>
+
+### Headers de Seguridad (Esenciales) ###
+<IfModule mod_headers.c>
+    # Protecciones básicas
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "DENY"
+    Header set X-XSS-Protection "1; mode=block"
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
+    
+    # CORS (Ajusta los dominios)
+    SetEnvIf Origin "^https://(tu-dominio\.com|localhost)(:[0-9]+)?$" CORS_ORIGIN=$0
+    Header set Access-Control-Allow-Origin "%{CORS_ORIGIN}e" env=CORS_ORIGIN
+    Header set Access-Control-Allow-Credentials "true"
+    
+    # Eliminar información del servidor
+    Header unset X-Powered-By
+    Header unset Server
+</IfModule>
+
+### Bloqueo de archivos sensibles ###
+<FilesMatch "\.(env|log|htaccess|bak|swp|lock)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
