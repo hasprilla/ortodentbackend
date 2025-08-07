@@ -52,9 +52,7 @@ class AuthenticatedSessionController extends Controller
         return response()->json([
             'success' => true,
             'token' => $token,
-            'token_type' => 'Bearer',
-            'expires_in' => 7200,
-            'user' => $this->sanitizeUser($request->user())
+            'data' => $this->sanitizeUser($request->user())
         ]);
     }
 
@@ -99,7 +97,6 @@ class AuthenticatedSessionController extends Controller
     private function sanitizeUser($user): array
     {
         return [
-            'id' => $user->id,
             'name' => $user->name,
             'email' => $user->email,
         ];
